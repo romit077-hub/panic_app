@@ -45,9 +45,3 @@ fun GreetingPreview() {
         Greeting("Android")
     }
 }
-git init
-git add .
-git commit -m "Initial PANIC Android project"
-git branch -M main
-git remote add origin https://github.com/romit077-hub/panic_app.git
-git push -u origin main
