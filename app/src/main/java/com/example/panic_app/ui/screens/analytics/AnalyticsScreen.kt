@@ -15,7 +15,7 @@ fun AnalyticsScreen() {
     val completion = DemoData.completed.size.toFloat() / DemoData.tasks.size
     ScreenList {
         item { ScreenHeading("Your momentum", "Small steps add up to real progress.") }
-        item { DemoNotice("DEMO PREVIEW • Statistics from sample tasks") }
+        item { DemoNotice("DESIGN PREVIEW • Sample statistics, not your saved tasks") }
         item {
             Panel {
                 Text("Completion rate", style = MaterialTheme.typography.titleMedium)

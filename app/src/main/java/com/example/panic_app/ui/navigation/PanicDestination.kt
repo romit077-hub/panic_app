@@ -11,7 +11,14 @@ enum class PanicDestination(val route: String, val title: String, val icon: Imag
     Calendar("calendar", "Calendar", Icons.Default.DateRange),
     Panic("panic", "Panic", Icons.Default.Warning),
     Analytics("analytics", "Analytics", Icons.Default.Info),
-    Settings("settings", "Settings", Icons.Default.Settings);
+    Settings("settings", "Settings", Icons.Default.Settings),
+    AddTask("task/add", "Add Task", Icons.Default.Add),
+    EditTask("task/edit/{taskId}", "Edit Task", Icons.Default.Edit);
+
+    fun forTask(id: Long): String {
+        require(this == EditTask && id > 0)
+        return route.replace("{taskId}", id.toString())
+    }
 
     companion object {
         val tabs = listOf(Dashboard, Tasks, Calendar, Panic)

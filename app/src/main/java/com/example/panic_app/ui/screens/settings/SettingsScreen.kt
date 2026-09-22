@@ -37,8 +37,7 @@ fun SettingsScreen(darkTheme: Boolean, notifications: Boolean, panicAlerts: Bool
                 }
             }
         }
-        item { Panel { Text("PANIC — Deadline Enforcer", style = MaterialTheme.typography.titleMedium); Text("College demo • Application foundation
-Sample content only. No database or notification service.", style = MaterialTheme.typography.bodyMedium) } }
+        item { Panel { Text("PANIC — Deadline Enforcer", style = MaterialTheme.typography.titleMedium); Text("College demo • Offline task management\nTasks are stored with Room. Reminder controls are previews only.", style = MaterialTheme.typography.bodyMedium) } }
     }
 }
 

@@ -16,7 +16,7 @@ import java.time.LocalDateTime
 fun PanicScreen() {
     ScreenList {
         item { ScreenHeading("PANIC MODE", "Focus on what matters right now.") }
-        item { DemoNotice("DEMO PREVIEW • Illustrative scores, no risk engine") }
+        item { DemoNotice("DESIGN PREVIEW • Sample tasks only; no real risk engine") }
         item { Text("${DemoData.urgent.size} priorities • ${DemoData.overdue.size} overdue", style = MaterialTheme.typography.titleMedium) }
         itemsIndexed(DemoData.urgent, key = { _, task -> task.id }) { index, task ->
             val colors = riskColors(task.risk, LocalPanicDarkTheme.current)

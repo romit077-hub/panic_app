@@ -22,7 +22,7 @@ fun CalendarScreen() {
     val tasks = DemoData.pending.filter { it.due.toLocalDate() == selected }.sortedBy { it.due }
     ScreenList {
         item { ScreenHeading(today.format(DateTimeFormatter.ofPattern("MMMM yyyy")), "Your next seven days, at a glance.") }
-        item { DemoNotice() }
+        item { DemoNotice("DESIGN PREVIEW • Sample schedule, not your saved tasks") }
         item {
             Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 (0L..6L).forEach { offset ->

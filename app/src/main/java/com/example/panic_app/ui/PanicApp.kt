@@ -12,6 +12,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.*
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
+import androidx.lifecycle.createSavedStateHandle
+import com.example.panic_app.data.repository.TaskRepository
+import com.example.panic_app.ui.screens.tasks.TasksViewModel
+import com.example.panic_app.ui.screens.addedittask.TaskEditorViewModel
+import com.example.panic_app.ui.screens.addedittask.TaskEditorScreen
 import com.example.panic_app.ui.navigation.PanicDestination
 import com.example.panic_app.ui.screens.analytics.AnalyticsScreen
 import com.example.panic_app.ui.screens.calendar.CalendarScreen
@@ -22,7 +33,11 @@ import com.example.panic_app.ui.screens.tasks.TasksScreen
 import com.example.panic_app.ui.theme.Panic_appTheme
 
 @Composable
-fun PanicApp(onThemeChanged: (Boolean) -> Unit = {}) {
+fun PanicApp(repository: TaskRepository, onThemeChanged: (Boolean) -> Unit = {}) {
+    val tasksViewModel: TasksViewModel = viewModel(factory = remember(repository) {
+        viewModelFactory { initializer { TasksViewModel(repository) } }
+    })
+    val tasksState by tasksViewModel.state.collectAsStateWithLifecycle()
     val systemDark = isSystemInDarkTheme()
     // Hoisted temporary preferences survive navigation and configuration recreation.
     var darkOverride by rememberSaveable { mutableStateOf<Boolean?>(null) }
@@ -31,7 +46,7 @@ fun PanicApp(onThemeChanged: (Boolean) -> Unit = {}) {
     var notifications by rememberSaveable { mutableStateOf(true) }
     var panicAlerts by rememberSaveable { mutableStateOf(true) }
     var intensity by rememberSaveable { mutableStateOf(1) }
-    var showAddInfo by rememberSaveable { mutableStateOf(false) }
+    var editorSaving by remember { mutableStateOf(false) }
     val navController = rememberNavController()
     val entry by navController.currentBackStackEntryAsState()
     val current = PanicDestination.fromRoute(entry?.destination?.route)
@@ -55,7 +70,7 @@ fun PanicApp(onThemeChanged: (Boolean) -> Unit = {}) {
                 Surface(color = MaterialTheme.colorScheme.background) {
                     Row(Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.statusBars).padding(horizontal = 12.dp, vertical = 10.dp),
                         verticalAlignment = Alignment.CenterVertically) {
-                        if (!primary) IconButton(onClick = { navController.popBackStack() }) {
+                        if (!primary) IconButton(enabled = !editorSaving, onClick = { navController.popBackStack() }) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
                         }
                         Column(Modifier.padding(start = 8.dp).weight(1f)) {
@@ -78,13 +93,27 @@ fun PanicApp(onThemeChanged: (Boolean) -> Unit = {}) {
             }
         ) { padding ->
             NavHost(navController = navController, startDestination = PanicDestination.Dashboard.route,
-                modifier = Modifier.fillMaxSize().padding(padding).consumeWindowInsets(padding)) {
+                modifier = Modifier.fillMaxSize().padding(padding).consumeWindowInsets(padding).imePadding()) {
                 composable(PanicDestination.Dashboard.route) {
-                    DashboardScreen(onTasks = { openTab(PanicDestination.Tasks) }, onPanic = { openTab(PanicDestination.Panic) },
+                    DashboardScreen(state = tasksState, onRetry = tasksViewModel::retry,
+                        onEdit = { openEdit(navController, it) }, onTasks = { openTab(PanicDestination.Tasks) }, onPanic = { openTab(PanicDestination.Panic) },
                         onAnalytics = { openDetail(PanicDestination.Analytics) }, onSettings = { openDetail(PanicDestination.Settings) },
-                        onAdd = { showAddInfo = true })
+                        onAdd = { openDetail(PanicDestination.AddTask) })
                 }
-                composable(PanicDestination.Tasks.route) { TasksScreen() }
+                composable(PanicDestination.Tasks.route) {
+                    TasksScreen(tasksState, onAdd = { openDetail(PanicDestination.AddTask) },
+                        onEdit = { openEdit(navController, it) }, onDelete = tasksViewModel::delete,
+                        onToggle = tasksViewModel::toggle, onRetry = tasksViewModel::retry,
+                        onDismissError = tasksViewModel::clearActionError)
+                }
+                composable(PanicDestination.AddTask.route) {
+                    TaskEditorRoute(repository, null, onFinished = { navController.popBackStack() }, onSaving = { editorSaving = it })
+                }
+                composable(PanicDestination.EditTask.route,
+                    arguments = listOf(navArgument("taskId") { type = NavType.LongType })) { backStackEntry ->
+                    TaskEditorRoute(repository, requireNotNull(backStackEntry.arguments).getLong("taskId"),
+                        onFinished = { navController.popBackStack() }, onSaving = { editorSaving = it })
+                }
                 composable(PanicDestination.Calendar.route) { CalendarScreen() }
                 composable(PanicDestination.Panic.route) { PanicScreen() }
                 composable(PanicDestination.Analytics.route) { AnalyticsScreen() }
@@ -95,12 +124,24 @@ fun PanicApp(onThemeChanged: (Boolean) -> Unit = {}) {
                 }
             }
         }
-        if (showAddInfo) AlertDialog(
-            onDismissRequest = { showAddInfo = false },
-            title = { Text("Task creation is coming next") },
-            text = { Text("This foundation uses read-only sample tasks. Adding and saving your own tasks will be available in the next phase.") },
-            confirmButton = { TextButton(onClick = { showAddInfo = false; openTab(PanicDestination.Tasks) }) { Text("Explore sample tasks") } },
-            dismissButton = { TextButton(onClick = { showAddInfo = false }) { Text("Close") } }
-        )
     }
+}
+
+private fun openEdit(navController: androidx.navigation.NavHostController, id: Long) {
+    navController.navigate(PanicDestination.EditTask.forTask(id)) { launchSingleTop = true }
+}
+
+@Composable
+private fun TaskEditorRoute(repository: TaskRepository, taskId: Long?, onFinished: () -> Unit, onSaving: (Boolean) -> Unit) {
+    val factory = remember(repository, taskId) {
+        viewModelFactory { initializer { TaskEditorViewModel(repository, createSavedStateHandle(), taskId) } }
+    }
+    val editor: TaskEditorViewModel = viewModel(factory = factory)
+    val state by editor.state.collectAsStateWithLifecycle()
+    val finish by rememberUpdatedState(onFinished)
+    SideEffect { onSaving(state.saving) }
+    DisposableEffect(Unit) { onDispose { onSaving(false) } }
+    LaunchedEffect(state.saved) { if (state.saved) finish() }
+    TaskEditorScreen(state, taskId != null, onChange = editor::change, onDeadline = editor::changeDeadline,
+        onDateError = editor::dateError, onSave = editor::save, onCancel = onFinished, onRetry = editor::load)
 }
