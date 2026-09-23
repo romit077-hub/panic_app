@@ -8,9 +8,10 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import com.example.panic_app.data.local.TaskEntity
 import com.example.panic_app.util.formatDeadline
+import com.example.panic_app.domain.risk.RiskResult
 
 @Composable
-fun TaskCard(task: TaskEntity, busy: Boolean, onEdit: () -> Unit, onDelete: () -> Unit, onToggle: () -> Unit) {
+fun TaskCard(task: TaskEntity, risk: RiskResult, busy: Boolean, onEdit: () -> Unit, onDelete: () -> Unit, onToggle: () -> Unit) {
     Panel {
         Text(task.title, style = MaterialTheme.typography.titleMedium,
             textDecoration = if (task.isCompleted) TextDecoration.LineThrough else TextDecoration.None)
@@ -20,6 +21,7 @@ fun TaskCard(task: TaskEntity, busy: Boolean, onEdit: () -> Unit, onDelete: () -
         Text("${task.estimatedMinutes} min estimate • ${task.priority.label} priority", style = MaterialTheme.typography.bodySmall)
         Text(if (task.isCompleted) "Completed" else "Pending", color = if (task.isCompleted) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.primary,
             style = MaterialTheme.typography.labelLarge)
+        if (!task.isCompleted) RiskSummary(risk)
         FilledTonalButton(onClick = onToggle, enabled = !busy, modifier = Modifier.fillMaxWidth()) {
             Text(if (busy) "Updating…" else if (task.isCompleted) "Mark incomplete" else "Mark complete")
         }
@@ -31,12 +33,13 @@ fun TaskCard(task: TaskEntity, busy: Boolean, onEdit: () -> Unit, onDelete: () -
 }
 
 @Composable
-fun DeadlineCard(task: TaskEntity, onEdit: () -> Unit) {
+fun DeadlineCard(task: TaskEntity, risk: RiskResult, onEdit: () -> Unit) {
     Panel {
         Text(task.title, style = MaterialTheme.typography.titleLarge)
         Text("${task.subject} • ${task.priority.label} priority", color = MaterialTheme.colorScheme.onSurfaceVariant)
         Text(formatDeadline(task.dueDateMillis), color = MaterialTheme.colorScheme.primary)
         Text("${task.estimatedMinutes} minutes estimated work", style = MaterialTheme.typography.bodyMedium)
+        if (!task.isCompleted) RiskSummary(risk)
         TextButton(onClick = onEdit) { Text("View / edit task") }
     }
 }

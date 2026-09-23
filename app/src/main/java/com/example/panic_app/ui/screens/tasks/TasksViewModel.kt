@@ -3,6 +3,8 @@ package com.example.panic_app.ui.screens.tasks
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.panic_app.data.local.TaskEntity
+import com.example.panic_app.domain.risk.RiskResult
+import com.example.panic_app.domain.risk.RiskLevel
 import com.example.panic_app.data.repository.TaskRepository
 import com.example.panic_app.ui.taskFailure
 import kotlinx.coroutines.Job
@@ -17,10 +19,27 @@ data class TasksUiState(
     val tasks: List<TaskEntity> = emptyList(),
     val loadError: String? = null,
     val actionError: String? = null,
-    val busyIds: Set<Long> = emptySet()
-)
+    val busyIds: Set<Long> = emptySet(),
+    val risks: Map<Long, RiskResult> = emptyMap(),
+    val rankedPendingIds: List<Long> = emptyList(),
+    val calculatedAtMillis: Long = 0
+) {
+    val pendingCount: Int get() = rankedPendingIds.size
+    val completedCount: Int get() = tasks.count { it.isCompleted }
+    val highCount: Int get() = risks.values.count { it.isActive && it.level == RiskLevel.HIGH }
+    val criticalCount: Int get() = risks.values.count { it.isActive && it.level == RiskLevel.CRITICAL }
+    val attentionCount: Int get() = risks.values.count { it.needsAttention }
+    val immediateCount: Int get() = risks.values.count { it.needsImmediateAttention }
+    val overdueCount: Int get() = risks.values.count { it.isOverdue }
+    fun rankedPending(): List<TaskEntity> {
+        val byId = tasks.associateBy { it.id }
+        return rankedPendingIds.mapNotNull { byId[it] }
+    }
+}
 
-class TasksViewModel(private val repository: TaskRepository) : ViewModel() {
+class TasksViewModel(private val repository: TaskRepository,
+    private val clock: () -> Long = System::currentTimeMillis) : ViewModel() {
+    companion object { const val RISK_REFRESH_INTERVAL_MILLIS = 30_000L }
     private val mutableState = MutableStateFlow(TasksUiState())
     val state = mutableState.asStateFlow()
     private var observation: Job? = null
@@ -32,13 +51,17 @@ class TasksViewModel(private val repository: TaskRepository) : ViewModel() {
         observation = viewModelScope.launch {
             try {
                 repository.observeAll().collect { tasks ->
-                    mutableState.update { it.copy(loading = false, tasks = tasks, loadError = null) }
+                    mutableState.update { it.withRisk(tasks, clock()).copy(loading = false, loadError = null) }
                 }
             } catch (error: Exception) {
                 val message = taskFailure(error, "load tasks")
                 mutableState.update { it.copy(loading = false, loadError = message) }
             }
         }
+    }
+    fun refreshTime() {
+        val now = clock()
+        mutableState.update { it.withRisk(it.tasks, now) }
     }
     fun clearActionError() { mutableState.update { it.copy(actionError = null) } }
     fun delete(id: Long) = perform(id, "delete task") { repository.deleteTask(id) }

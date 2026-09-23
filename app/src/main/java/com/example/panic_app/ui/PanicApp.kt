@@ -15,6 +15,11 @@ import androidx.navigation.compose.*
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.repeatOnLifecycle
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
@@ -38,6 +43,16 @@ fun PanicApp(repository: TaskRepository, onThemeChanged: (Boolean) -> Unit = {})
         viewModelFactory { initializer { TasksViewModel(repository) } }
     })
     val tasksState by tasksViewModel.state.collectAsStateWithLifecycle()
+    val lifecycleOwner = LocalLifecycleOwner.current
+    LaunchedEffect(lifecycleOwner, tasksViewModel) {
+        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            // Runs immediately on foreground/resume, then only while visible. No background scheduler.
+            while (isActive) {
+                tasksViewModel.refreshTime()
+                delay(TasksViewModel.RISK_REFRESH_INTERVAL_MILLIS)
+            }
+        }
+    }
     val systemDark = isSystemInDarkTheme()
     // Hoisted temporary preferences survive navigation and configuration recreation.
     var darkOverride by rememberSaveable { mutableStateOf<Boolean?>(null) }
@@ -114,8 +129,8 @@ fun PanicApp(repository: TaskRepository, onThemeChanged: (Boolean) -> Unit = {})
                     TaskEditorRoute(repository, requireNotNull(backStackEntry.arguments).getLong("taskId"),
                         onFinished = { navController.popBackStack() }, onSaving = { editorSaving = it })
                 }
-                composable(PanicDestination.Calendar.route) { CalendarScreen() }
-                composable(PanicDestination.Panic.route) { PanicScreen() }
+                composable(PanicDestination.Calendar.route) { CalendarScreen(tasksState, onEdit = { openEdit(navController, it) }, onRetry = tasksViewModel::retry) }
+                composable(PanicDestination.Panic.route) { PanicScreen(tasksState, onEdit = { openEdit(navController, it) }, onTasks = { openTab(PanicDestination.Tasks) }, onRetry = tasksViewModel::retry) }
                 composable(PanicDestination.Analytics.route) { AnalyticsScreen() }
                 composable(PanicDestination.Settings.route) {
                     SettingsScreen(darkTheme, notifications, panicAlerts, intensity,

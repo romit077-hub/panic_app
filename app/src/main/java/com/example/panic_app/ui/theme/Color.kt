@@ -1,7 +1,7 @@
 package com.example.panic_app.ui.theme
 
 import androidx.compose.ui.graphics.Color
-import com.example.panic_app.model.RiskLevel
+import com.example.panic_app.domain.risk.RiskLevel
 
 data class RiskColors(val foreground: Color, val background: Color)
 

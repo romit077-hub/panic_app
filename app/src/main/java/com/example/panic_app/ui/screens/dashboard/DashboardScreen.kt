@@ -14,8 +14,9 @@ import java.time.format.DateTimeFormatter
 @Composable
 fun DashboardScreen(state: TasksUiState, onTasks: () -> Unit, onPanic: () -> Unit,
     onAnalytics: () -> Unit, onSettings: () -> Unit, onAdd: () -> Unit, onEdit: (Long) -> Unit, onRetry: () -> Unit) {
-    val pending = state.tasks.filterNot { it.isCompleted }
+    val pending = state.rankedPending()
     val nearest = pending.minByOrNull { it.dueDateMillis }
+    val attention = pending.firstOrNull { state.risks.getValue(it.id).needsAttention }
     ScreenList {
         item {
             val greeting = when (LocalTime.now().hour) { in 5..11 -> "Good morning"; in 12..16 -> "Good afternoon"; else -> "Good evening" }
@@ -29,22 +30,38 @@ fun DashboardScreen(state: TasksUiState, onTasks: () -> Unit, onPanic: () -> Uni
             else -> {
                 item {
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        StatCard("Pending", pending.size.toString(), Modifier.weight(1f))
-                        StatCard("Completed", state.tasks.count { it.isCompleted }.toString(), Modifier.weight(1f))
+                        StatCard("Pending", state.pendingCount.toString(), Modifier.weight(1f))
+                        StatCard("Completed", state.completedCount.toString(), Modifier.weight(1f))
                     }
                 }
+                item {
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        StatCard("High risk", state.highCount.toString(), Modifier.weight(1f))
+                        StatCard("Critical", state.criticalCount.toString(), Modifier.weight(1f))
+                    }
+                }
+                item { SectionHeader("Needs attention", "Panic Mode", onPanic) }
+                if (attention != null) item {
+                    Panel {
+                        Text(attention.title, style = MaterialTheme.typography.titleLarge)
+                        Text(attention.subject, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        RiskSummary(state.risks.getValue(attention.id), expanded = true)
+                        TextButton(onClick = { onEdit(attention.id) }) { Text("View / edit task") }
+                    }
+                } else item { Panel { Text("Everything is under control.", style = MaterialTheme.typography.titleMedium); Text("No deadlines currently need urgent attention.") } }
                 item { SectionHeader("Nearest pending deadline", "All tasks", onTasks) }
-                if (nearest != null) item { DeadlineCard(nearest, onEdit = { onEdit(nearest.id) }) }
+                if (nearest != null) item { DeadlineCard(nearest, state.risks.getValue(nearest.id), onEdit = { onEdit(nearest.id) }) }
                 else item { EmptyTasks(
                     title = if (state.tasks.isEmpty()) "No deadlines yet" else "You're all caught up",
                     subtitle = if (state.tasks.isEmpty()) "Add your first task and PANIC will help you stay ahead." else "All your saved tasks are complete.", onAdd = onAdd) }
-            }
-        }
-        item {
-            Panel {
-                Text("PANIC MODE", style = MaterialTheme.typography.titleLarge)
-                Text("Risk scoring is coming in a later phase. Explore the clearly labelled design preview.")
-                OutlinedButton(onClick = onPanic, modifier = Modifier.fillMaxWidth()) { Text("Open Panic preview") }
+                item {
+                    Panel {
+                        Text("PANIC MODE", style = MaterialTheme.typography.titleLarge)
+                        Text("${state.attentionCount} tasks need planning or action.")
+                        Text("${state.immediateCount} need immediate attention • ${state.overdueCount} overdue", style = MaterialTheme.typography.bodyMedium)
+                        Button(onClick = onPanic, modifier = Modifier.fillMaxWidth()) { Text("Enter Panic Mode") }
+                    }
+                }
             }
         }
         item {

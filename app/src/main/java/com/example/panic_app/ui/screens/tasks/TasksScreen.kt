@@ -17,8 +17,8 @@ fun TasksScreen(state: TasksUiState, onAdd: () -> Unit, onEdit: (Long) -> Unit,
     val deleting = state.tasks.firstOrNull { it.id == deleteId }
     val visible = when (selected) {
         "Completed" -> state.tasks.filter { it.isCompleted }
-        "All" -> state.tasks
-        else -> state.tasks.filterNot { it.isCompleted }
+        "All" -> state.rankedPending() + state.tasks.filter { it.isCompleted }
+        else -> state.rankedPending()
     }
     ScreenList {
         item { ScreenHeading("Your tasks", "Your deadlines, saved offline on this device.") }
@@ -40,9 +40,9 @@ fun TasksScreen(state: TasksUiState, onAdd: () -> Unit, onEdit: (Long) -> Unit,
             state.tasks.isEmpty() -> item { EmptyTasks(onAdd = onAdd) }
             visible.isEmpty() -> item { EmptyTasks("No ${selected.lowercase()} tasks", "Choose another filter or add a deadline.", onAdd) }
             else -> {
-                item { Text("${visible.size} tasks", color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                item { Text("${visible.size} tasks • Pending tasks ordered by urgency", color = MaterialTheme.colorScheme.onSurfaceVariant) }
                 items(visible, key = { it.id }) { task ->
-                    TaskCard(task, task.id in state.busyIds, onEdit = { onEdit(task.id) },
+                    TaskCard(task, state.risks.getValue(task.id), task.id in state.busyIds, onEdit = { onEdit(task.id) },
                         onDelete = { deleteId = task.id }, onToggle = { onToggle(task.id) })
                 }
             }
