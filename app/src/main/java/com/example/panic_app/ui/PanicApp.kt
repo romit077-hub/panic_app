@@ -33,12 +33,14 @@ import com.example.panic_app.ui.screens.analytics.AnalyticsScreen
 import com.example.panic_app.ui.screens.calendar.CalendarScreen
 import com.example.panic_app.ui.screens.dashboard.DashboardScreen
 import com.example.panic_app.ui.screens.panic.PanicScreen
-import com.example.panic_app.ui.screens.settings.SettingsScreen
+import com.example.panic_app.ui.screens.settings.ReminderSettingsRoute
+import com.example.panic_app.notification.DeadlineReminderController
 import com.example.panic_app.ui.screens.tasks.TasksScreen
 import com.example.panic_app.ui.theme.Panic_appTheme
 
 @Composable
-fun PanicApp(repository: TaskRepository, onThemeChanged: (Boolean) -> Unit = {}) {
+fun PanicApp(repository: TaskRepository, reminders: DeadlineReminderController,
+    openPanic: Boolean = false, onPanicOpened: () -> Unit = {}, onThemeChanged: (Boolean) -> Unit = {}) {
     val tasksViewModel: TasksViewModel = viewModel(factory = remember(repository) {
         viewModelFactory { initializer { TasksViewModel(repository) } }
     })
@@ -46,7 +48,7 @@ fun PanicApp(repository: TaskRepository, onThemeChanged: (Boolean) -> Unit = {})
     val lifecycleOwner = LocalLifecycleOwner.current
     LaunchedEffect(lifecycleOwner, tasksViewModel) {
         lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
-            // Runs immediately on foreground/resume, then only while visible. No background scheduler.
+            // Runs immediately on foreground/resume, then only while visible. Background notification checks have their own WorkManager schedule.
             while (isActive) {
                 tasksViewModel.refreshTime()
                 delay(TasksViewModel.RISK_REFRESH_INTERVAL_MILLIS)
@@ -58,9 +60,6 @@ fun PanicApp(repository: TaskRepository, onThemeChanged: (Boolean) -> Unit = {})
     var darkOverride by rememberSaveable { mutableStateOf<Boolean?>(null) }
     val darkTheme = darkOverride ?: systemDark
     SideEffect { onThemeChanged(darkTheme) }
-    var notifications by rememberSaveable { mutableStateOf(true) }
-    var panicAlerts by rememberSaveable { mutableStateOf(true) }
-    var intensity by rememberSaveable { mutableStateOf(1) }
     var editorSaving by remember { mutableStateOf(false) }
     val navController = rememberNavController()
     val entry by navController.currentBackStackEntryAsState()
@@ -78,6 +77,12 @@ fun PanicApp(repository: TaskRepository, onThemeChanged: (Boolean) -> Unit = {})
         navController.navigate(destination.route) { launchSingleTop = true }
     }
 
+    LaunchedEffect(openPanic) {
+        if (openPanic) {
+            openTab(PanicDestination.Panic)
+            onPanicOpened()
+        }
+    }
     Panic_appTheme(darkTheme) {
         Scaffold(
             containerColor = MaterialTheme.colorScheme.background,
@@ -133,9 +138,7 @@ fun PanicApp(repository: TaskRepository, onThemeChanged: (Boolean) -> Unit = {})
                 composable(PanicDestination.Panic.route) { PanicScreen(tasksState, onEdit = { openEdit(navController, it) }, onTasks = { openTab(PanicDestination.Tasks) }, onRetry = tasksViewModel::retry) }
                 composable(PanicDestination.Analytics.route) { AnalyticsScreen() }
                 composable(PanicDestination.Settings.route) {
-                    SettingsScreen(darkTheme, notifications, panicAlerts, intensity,
-                        onDarkTheme = { darkOverride = it }, onNotifications = { notifications = it },
-                        onPanicAlerts = { panicAlerts = it }, onIntensity = { intensity = it })
+                    ReminderSettingsRoute(reminders, darkTheme, onDarkTheme = { darkOverride = it })
                 }
             }
         }

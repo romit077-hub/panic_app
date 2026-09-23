@@ -12,42 +12,57 @@ import com.example.panic_app.ui.components.*
 
 @Composable
 fun SettingsScreen(darkTheme: Boolean, notifications: Boolean, panicAlerts: Boolean, intensity: Int,
-    onDarkTheme: (Boolean) -> Unit, onNotifications: (Boolean) -> Unit, onPanicAlerts: (Boolean) -> Unit, onIntensity: (Int) -> Unit) {
+    onDarkTheme: (Boolean) -> Unit, onNotifications: (Boolean) -> Unit, onPanicAlerts: (Boolean) -> Unit, onIntensity: (Int) -> Unit,
+    status: String, feedback: String?, busy: Boolean, canRequestPermission: Boolean,
+    onPermission: () -> Unit, onSystemSettings: () -> Unit, debug: Boolean, onCheckNow: () -> Unit) {
     ScreenList {
         item { ScreenHeading("Make it yours", "Choose how PANIC feels for you.") }
-        item { DemoNotice("PREVIEW SETTINGS • Not saved permanently") }
+        item { Panel {
+            Text(if (notifications) "Reminders requested" else "Reminders off", style = MaterialTheme.typography.titleMedium)
+            Text(status)
+            Text("Notifications help you act before deadlines become critical. Android permission and channel settings also control delivery.", style = MaterialTheme.typography.bodySmall)
+            if (canRequestPermission) Button(onClick = onPermission, enabled = !busy) { Text("Allow notifications") }
+            TextButton(onClick = onSystemSettings) { Text("Open Android notification settings") }
+            feedback?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
+        } }
         item { SectionHeader("Appearance") }
-        item { Panel { SettingToggle("Dark mode", "Applies across every screen immediately.", darkTheme, onDarkTheme) } }
+        item { Panel { SettingToggle("Dark mode", "Applies immediately; theme choice lasts for this app session.", darkTheme, onDarkTheme) } }
         item { SectionHeader("Reminder preferences") }
         item {
             Panel {
-                Text("Preview only. These controls do not schedule reminders or send notifications.", style = MaterialTheme.typography.bodyMedium)
-                SettingToggle("Notifications", "Example reminder preference", notifications, onNotifications)
+                Text("Preferences are saved on this device. Background checks are approximate and may be delayed by Android.", style = MaterialTheme.typography.bodyMedium)
+                SettingToggle("Notifications", "Allow risk-based deadline reminders", notifications, onNotifications, !busy)
                 HorizontalDivider()
-                SettingToggle("Panic alerts", "Example urgent alert preference", panicAlerts, onPanicAlerts)
+                SettingToggle("Panic alerts", "Allow HIGH, CRITICAL and overdue alerts", panicAlerts, onPanicAlerts, !busy)
             }
         }
         item {
             Panel {
                 Text("Reminder intensity", style = MaterialTheme.typography.titleMedium)
-                listOf("Gentle", "Balanced", "Strong").forEachIndexed { index, title ->
-                    OutlinedButton(onClick = { onIntensity(index) }, modifier = Modifier.fillMaxWidth()) {
+                Text("Gentle: high risk and above. Balanced: warning and above. Aggressive: shorter cooldowns, still throttled.", style = MaterialTheme.typography.bodySmall)
+                listOf("Gentle", "Balanced", "Aggressive").forEachIndexed { index, title ->
+                    OutlinedButton(onClick = { onIntensity(index) }, enabled = !busy, modifier = Modifier.fillMaxWidth()) {
                         Text(if (intensity == index) "✓ $title" else title)
                     }
                 }
             }
         }
-        item { Panel { Text("PANIC — Deadline Enforcer", style = MaterialTheme.typography.titleMedium); Text("College demo • Offline task management\nTasks are stored with Room. Reminder controls are previews only.", style = MaterialTheme.typography.bodyMedium) } }
+        if (debug) item { Panel {
+            Text("Developer tools • Debug build", style = MaterialTheme.typography.titleMedium)
+            Text("Runs the real check immediately. Permissions, saved preferences and cooldowns still apply. At most one reminder per check.")
+            Button(onClick = onCheckNow, enabled = !busy) { Text(if (busy) "Working…" else "Run deadline check now") }
+        } }
+        item { Panel { Text("PANIC — Deadline Enforcer", style = MaterialTheme.typography.titleMedium); Text("College demo • Offline task management\nTasks are stored with Room. Risk-based reminders use the same engine as PANIC Mode.", style = MaterialTheme.typography.bodyMedium) } }
     }
 }
 
 @Composable
-private fun SettingToggle(title: String, description: String, value: Boolean, onChange: (Boolean) -> Unit) {
+private fun SettingToggle(title: String, description: String, value: Boolean, onChange: (Boolean) -> Unit, enabled: Boolean = true) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         Column(Modifier.weight(1f)) {
             Text(title, style = MaterialTheme.typography.titleMedium)
             Text(description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        Switch(checked = value, onCheckedChange = onChange, modifier = Modifier.semantics { contentDescription = title })
+        Switch(enabled = enabled, checked = value, onCheckedChange = onChange, modifier = Modifier.semantics { contentDescription = title })
     }
 }

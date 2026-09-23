@@ -16,7 +16,10 @@ room = "2.8.4"
 ksp = "2.3.6"
 coroutines = "1.10.2"
 
+work = "2.11.0"
+
 [libraries]
+androidx-work-runtime = { module = "androidx.work:work-runtime", version.ref = "work" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
