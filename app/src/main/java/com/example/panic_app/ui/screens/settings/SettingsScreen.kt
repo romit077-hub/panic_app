@@ -9,10 +9,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import com.example.panic_app.ui.components.*
+import com.example.panic_app.model.ThemePreference
 
 @Composable
-fun SettingsScreen(darkTheme: Boolean, notifications: Boolean, panicAlerts: Boolean, intensity: Int,
-    onDarkTheme: (Boolean) -> Unit, onNotifications: (Boolean) -> Unit, onPanicAlerts: (Boolean) -> Unit, onIntensity: (Int) -> Unit,
+fun SettingsScreen(theme: ThemePreference, notifications: Boolean, panicAlerts: Boolean, intensity: Int,
+    onTheme: (ThemePreference) -> Unit, onNotifications: (Boolean) -> Unit, onPanicAlerts: (Boolean) -> Unit, onIntensity: (Int) -> Unit,
     status: String, feedback: String?, busy: Boolean, canRequestPermission: Boolean,
     onPermission: () -> Unit, onSystemSettings: () -> Unit, debug: Boolean, onCheckNow: () -> Unit) {
     ScreenList {
@@ -26,7 +27,15 @@ fun SettingsScreen(darkTheme: Boolean, notifications: Boolean, panicAlerts: Bool
             feedback?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
         } }
         item { SectionHeader("Appearance") }
-        item { Panel { SettingToggle("Dark mode", "Applies immediately; theme choice lasts for this app session.", darkTheme, onDarkTheme) } }
+        item { Panel {
+            Text("Theme", style = MaterialTheme.typography.titleMedium)
+            Text("Saved on this device. System follows your Android appearance setting.")
+            ThemePreference.entries.forEach { option ->
+                OutlinedButton(onClick = { onTheme(option) }, enabled = !busy, modifier = Modifier.fillMaxWidth()) {
+                    Text(if (theme == option) "✓ ${option.label}" else option.label)
+                }
+            }
+        } }
         item { SectionHeader("Reminder preferences") }
         item {
             Panel {

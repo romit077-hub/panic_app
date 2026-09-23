@@ -20,7 +20,7 @@ import kotlinx.coroutines.launch
 import java.io.IOException
 
 @Composable
-fun ReminderSettingsRoute(controller: DeadlineReminderController, darkTheme: Boolean, onDarkTheme: (Boolean) -> Unit) {
+fun ReminderSettingsRoute(controller: DeadlineReminderController) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val preferences by controller.settings.collectAsStateWithLifecycle()
@@ -49,8 +49,8 @@ fun ReminderSettingsRoute(controller: DeadlineReminderController, darkTheme: Boo
             finally { busy = false }
         }
     }
-    SettingsScreen(darkTheme, preferences.enabled, preferences.panicAlerts, preferences.intensity.ordinal,
-        onDarkTheme = onDarkTheme,
+    SettingsScreen(preferences.theme, preferences.enabled, preferences.panicAlerts, preferences.intensity.ordinal,
+        onTheme = { theme -> perform { controller.updateTheme(theme); "Theme saved." } },
         onNotifications = { enabled -> perform { controller.updateSettings { it.copy(enabled = enabled) }; "Reminder preference saved." } },
         onPanicAlerts = { enabled -> perform { controller.updateSettings { it.copy(panicAlerts = enabled) }; "Panic alert preference saved." } },
         onIntensity = { index -> perform { controller.updateSettings { it.copy(intensity = ReminderIntensity.entries[index]) }; "Intensity saved." } },

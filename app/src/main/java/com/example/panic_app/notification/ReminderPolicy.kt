@@ -1,12 +1,14 @@
 package com.example.panic_app.notification
 
+import com.example.panic_app.model.ThemePreference
 import com.example.panic_app.domain.risk.RiskLevel
 import com.example.panic_app.domain.risk.RiskResult
 
 enum class ReminderIntensity { GENTLE, BALANCED, AGGRESSIVE }
 enum class ReminderSeverity { WARNING, HIGH, CRITICAL, OVERDUE }
 data class ReminderSettings(val enabled: Boolean = true, val panicAlerts: Boolean = true,
-    val intensity: ReminderIntensity = ReminderIntensity.BALANCED)
+    val intensity: ReminderIntensity = ReminderIntensity.BALANCED,
+    val theme: ThemePreference = ThemePreference.SYSTEM)
 data class ReminderStamp(val severity: ReminderSeverity, val timestamp: Long)
 
 /** Pure policy. RiskCalculator remains the sole source of risk classification. */

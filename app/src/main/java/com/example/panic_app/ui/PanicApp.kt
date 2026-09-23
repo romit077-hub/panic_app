@@ -6,7 +6,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -56,9 +55,8 @@ fun PanicApp(repository: TaskRepository, reminders: DeadlineReminderController,
         }
     }
     val systemDark = isSystemInDarkTheme()
-    // Hoisted temporary preferences survive navigation and configuration recreation.
-    var darkOverride by rememberSaveable { mutableStateOf<Boolean?>(null) }
-    val darkTheme = darkOverride ?: systemDark
+    val preferences by reminders.settings.collectAsStateWithLifecycle()
+    val darkTheme = preferences.theme.useDarkTheme(systemDark)
     SideEffect { onThemeChanged(darkTheme) }
     var editorSaving by remember { mutableStateOf(false) }
     val navController = rememberNavController()
@@ -136,9 +134,9 @@ fun PanicApp(repository: TaskRepository, reminders: DeadlineReminderController,
                 }
                 composable(PanicDestination.Calendar.route) { CalendarScreen(tasksState, onEdit = { openEdit(navController, it) }, onRetry = tasksViewModel::retry) }
                 composable(PanicDestination.Panic.route) { PanicScreen(tasksState, onEdit = { openEdit(navController, it) }, onTasks = { openTab(PanicDestination.Tasks) }, onRetry = tasksViewModel::retry) }
-                composable(PanicDestination.Analytics.route) { AnalyticsScreen() }
+                composable(PanicDestination.Analytics.route) { AnalyticsScreen(tasksState, onRetry = tasksViewModel::retry, onPanic = { openTab(PanicDestination.Panic) }) }
                 composable(PanicDestination.Settings.route) {
-                    ReminderSettingsRoute(reminders, darkTheme, onDarkTheme = { darkOverride = it })
+                    ReminderSettingsRoute(reminders)
                 }
             }
         }

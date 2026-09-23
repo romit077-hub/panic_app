@@ -1,6 +1,7 @@
 package com.example.panic_app.notification
 
 import android.content.Context
+import com.example.panic_app.model.ThemePreference
 import java.io.IOException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -13,10 +14,11 @@ class ReminderStore(context: Context) {
     private fun readSettings() = ReminderSettings(
         preferences.getBoolean("enabled", true), preferences.getBoolean("panic", true),
         ReminderIntensity.entries.firstOrNull { it.name == preferences.getString("intensity", null) }
-            ?: ReminderIntensity.BALANCED)
+            ?: ReminderIntensity.BALANCED,
+        ThemePreference.fromStored(preferences.getString("theme", null)))
     fun save(settings: ReminderSettings) {
         persist(preferences.edit().putBoolean("enabled", settings.enabled)
-            .putBoolean("panic", settings.panicAlerts).putString("intensity", settings.intensity.name))
+            .putBoolean("panic", settings.panicAlerts).putString("intensity", settings.intensity.name).putString("theme", settings.theme.name))
         mutableSettings.value = settings
     }
     fun last(id: Long): ReminderStamp? {

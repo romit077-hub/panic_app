@@ -15,7 +15,7 @@ import java.time.format.DateTimeFormatter
 fun DashboardScreen(state: TasksUiState, onTasks: () -> Unit, onPanic: () -> Unit,
     onAnalytics: () -> Unit, onSettings: () -> Unit, onAdd: () -> Unit, onEdit: (Long) -> Unit, onRetry: () -> Unit) {
     val pending = state.rankedPending()
-    val nearest = pending.minByOrNull { it.dueDateMillis }
+    val nearest = state.analytics.nearest?.let { deadline -> pending.firstOrNull { it.id == deadline.id } }
     val attention = pending.firstOrNull { state.risks.getValue(it.id).needsAttention }
     ScreenList {
         item {
@@ -66,7 +66,7 @@ fun DashboardScreen(state: TasksUiState, onTasks: () -> Unit, onPanic: () -> Uni
         }
         item {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedButton(onClick = onAnalytics, modifier = Modifier.weight(1f)) { Text("Analytics preview") }
+                OutlinedButton(onClick = onAnalytics, modifier = Modifier.weight(1f)) { Text("Analytics") }
                 OutlinedButton(onClick = onSettings, modifier = Modifier.weight(1f)) { Text("Settings") }
             }
         }

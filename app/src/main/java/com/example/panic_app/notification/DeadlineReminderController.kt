@@ -1,6 +1,7 @@
 package com.example.panic_app.notification
 
 import android.content.Context
+import com.example.panic_app.model.ThemePreference
 import com.example.panic_app.data.local.TaskDao
 import com.example.panic_app.data.local.TaskEntity
 import com.example.panic_app.data.repository.TaskMutationGate
@@ -24,6 +25,9 @@ class DeadlineReminderController(context: Context, private val dao: TaskDao, pri
         }
     }
     fun start() { scheduler.configure(settings.value.enabled) }
+    suspend fun updateTheme(theme: ThemePreference) = withContext(Dispatchers.IO) {
+        gate.mutex.withLock { store.save(settings.value.copy(theme = theme)) }
+    }
     suspend fun updateSettings(transform: (ReminderSettings) -> ReminderSettings) = withContext(Dispatchers.IO) {
         gate.mutex.withLock {
             val updated = transform(settings.value)

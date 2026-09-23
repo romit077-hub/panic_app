@@ -38,4 +38,18 @@ class TaskRiskStateTest {
         val rescheduled = updated.withRisk(listOf(first.copy(dueDateMillis = now + 30L * 24 * 60 * 60_000), task(2, 120)), now)
         assertFalse(rescheduled.risks.getValue(1).needsAttention)
     }
+    @Test fun analyticsAndDashboardShareCountsThroughTaskChanges() {
+        val urgent = task(1, 30)
+        val safe = task(2, 20000)
+        val snapshots = listOf(listOf(urgent, safe), listOf(urgent.copy(isCompleted = true), safe),
+            listOf(urgent, safe), listOf(urgent.copy(dueDateMillis = now - 1), safe), listOf(safe), emptyList())
+        snapshots.forEach { tasks ->
+            val state = TasksUiState().withRisk(tasks, now)
+            assertEquals(state.rankedPendingIds.size, state.analytics.pending)
+            assertEquals(state.pendingCount, state.analytics.pending)
+            assertEquals(state.completedCount, state.analytics.completed)
+            assertEquals(state.risks.values.count { it.isActive && it.level == com.example.panic_app.domain.risk.RiskLevel.CRITICAL }, state.analytics.critical)
+            assertEquals(state.risks.values.count { it.isOverdue }, state.analytics.overdue)
+        }
+    }
 }

@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.panic_app.data.local.TaskEntity
 import com.example.panic_app.domain.risk.RiskResult
-import com.example.panic_app.domain.risk.RiskLevel
+import com.example.panic_app.domain.analytics.AnalyticsSummary
 import com.example.panic_app.data.repository.TaskRepository
 import com.example.panic_app.ui.taskFailure
 import kotlinx.coroutines.Job
@@ -22,15 +22,16 @@ data class TasksUiState(
     val busyIds: Set<Long> = emptySet(),
     val risks: Map<Long, RiskResult> = emptyMap(),
     val rankedPendingIds: List<Long> = emptyList(),
-    val calculatedAtMillis: Long = 0
+    val calculatedAtMillis: Long = 0,
+    val analytics: AnalyticsSummary = AnalyticsSummary()
 ) {
-    val pendingCount: Int get() = rankedPendingIds.size
-    val completedCount: Int get() = tasks.count { it.isCompleted }
-    val highCount: Int get() = risks.values.count { it.isActive && it.level == RiskLevel.HIGH }
-    val criticalCount: Int get() = risks.values.count { it.isActive && it.level == RiskLevel.CRITICAL }
+    val pendingCount: Int get() = analytics.pending
+    val completedCount: Int get() = analytics.completed
+    val highCount: Int get() = analytics.high
+    val criticalCount: Int get() = analytics.critical
     val attentionCount: Int get() = risks.values.count { it.needsAttention }
     val immediateCount: Int get() = risks.values.count { it.needsImmediateAttention }
-    val overdueCount: Int get() = risks.values.count { it.isOverdue }
+    val overdueCount: Int get() = analytics.overdue
     fun rankedPending(): List<TaskEntity> {
         val byId = tasks.associateBy { it.id }
         return rankedPendingIds.mapNotNull { byId[it] }
