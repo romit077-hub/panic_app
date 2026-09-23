@@ -20,7 +20,9 @@ private fun formatWholeMinutes(minutes: Long): String {
     val hours = (minutes % MINUTES_PER_DAY) / MINUTES_PER_HOUR
     val remainder = minutes % MINUTES_PER_HOUR
     return when {
-        days > 0 -> units(days, "day") + if (hours > 0) " ${units(hours, "hour")}" else ""
+        days > 0 -> listOfNotNull(units(days, "day"),
+            if (hours > 0) units(hours, "hour") else null,
+            if (remainder > 0) units(remainder, "minute") else null).joinToString(" ")
         hours > 0 -> units(hours, "hour") + if (remainder > 0) " ${units(remainder, "minute")}" else ""
         else -> units(remainder, "minute")
     }

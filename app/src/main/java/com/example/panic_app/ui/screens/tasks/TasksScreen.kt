@@ -1,6 +1,8 @@
 package com.example.panic_app.ui.screens.tasks
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -24,7 +26,7 @@ fun TasksScreen(state: TasksUiState, onAdd: () -> Unit, onEdit: (Long) -> Unit,
         item { ScreenHeading("Your tasks", "Your deadlines, saved offline on this device.") }
         item { Button(onClick = onAdd, modifier = Modifier.fillMaxWidth()) { Text("+ Add Task") } }
         item {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 listOf("Pending", "Completed", "All").forEach { label ->
                     FilterChip(selected = selected == label, onClick = { selected = label }, label = { Text(label) })
                 }

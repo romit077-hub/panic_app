@@ -18,9 +18,11 @@ import java.time.format.DateTimeFormatter
 
 @Composable
 fun CalendarScreen(state: TasksUiState, onEdit: (Long) -> Unit, onRetry: () -> Unit) {
-    val today = LocalDate.now()
+    val zone = ZoneId.systemDefault()
+    val today = if (state.calculatedAtMillis == 0L) LocalDate.now(zone)
+        else Instant.ofEpochMilli(state.calculatedAtMillis).atZone(zone).toLocalDate()
     var selectedDay by rememberSaveable { mutableStateOf(today.toEpochDay()) }
-    val selected = LocalDate.ofEpochDay(selectedDay)
+    val selected = selectedCalendarDay(selectedDay, today)
     val pending = state.tasks.filterNot { it.isCompleted }
     fun localDate(millis: Long) = Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).toLocalDate()
     val tasks = pending.filter { localDate(it.dueDateMillis) == selected }.sortedBy { it.dueDateMillis }
@@ -50,7 +52,7 @@ fun CalendarScreen(state: TasksUiState, onEdit: (Long) -> Unit, onRetry: () -> U
                     DeadlineCard(task, state.risks.getValue(task.id), onEdit = { onEdit(task.id) })
                 }
                 item { SectionHeader("Upcoming deadlines") }
-                val upcoming = pending.filter { !localDate(it.dueDateMillis).isBefore(today) }.sortedBy { it.dueDateMillis }
+                val upcoming = upcomingCalendarTasks(state.tasks, state.calculatedAtMillis)
                 if (upcoming.isEmpty()) item { Panel { Text("No upcoming deadlines.") } }
                 items(upcoming, key = { "upcoming-${it.id}" }) { task ->
                     DeadlineCard(task, state.risks.getValue(task.id), onEdit = { onEdit(task.id) })

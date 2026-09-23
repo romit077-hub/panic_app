@@ -28,14 +28,6 @@ fun ScreenHeading(title: String, subtitle: String) {
 }
 
 @Composable
-fun DemoNotice(text: String = "DESIGN PREVIEW • Illustrative content") {
-    Surface(color = MaterialTheme.colorScheme.surfaceVariant, shape = RoundedCornerShape(12.dp)) {
-        Text(text, Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
-            style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-    }
-}
-
-@Composable
 fun SectionHeader(title: String, action: String? = null, onAction: () -> Unit = {}) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {

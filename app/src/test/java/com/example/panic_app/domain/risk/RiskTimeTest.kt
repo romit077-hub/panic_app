@@ -18,4 +18,9 @@ class RiskTimeTest {
         val text = formatRemainingTime(Long.MIN_VALUE)
         assertTrue(text.startsWith("Overdue by ")); assertFalse(text.contains("-"))
     }
+    @Test fun multiDayWorkDoesNotDiscardRemainingMinutes() {
+        assertEquals("1 day 30 minutes", formatWorkMinutes(1470))
+        assertEquals("2 days 1 hour 5 minutes", formatWorkMinutes(2945))
+        assertEquals("Overdue by 1 day 30 minutes", formatRemainingTime(-1470 * MILLIS_PER_MINUTE))
+    }
 }

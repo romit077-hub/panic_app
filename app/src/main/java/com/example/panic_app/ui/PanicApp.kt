@@ -65,8 +65,10 @@ fun PanicApp(repository: TaskRepository, reminders: DeadlineReminderController,
     val primary = current in PanicDestination.tabs
 
     fun openTab(destination: PanicDestination) {
+        if (current == destination) return
         navController.navigate(destination.route) {
-            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+            // Preserve tab state, but do not archive detail/editor screens as a tab's landing page.
+            popUpTo(navController.graph.findStartDestination().id) { saveState = primary }
             launchSingleTop = true
             restoreState = true
         }
@@ -75,9 +77,14 @@ fun PanicApp(repository: TaskRepository, reminders: DeadlineReminderController,
         navController.navigate(destination.route) { launchSingleTop = true }
     }
 
-    LaunchedEffect(openPanic) {
-        if (openPanic) {
-            openTab(PanicDestination.Panic)
+    LaunchedEffect(openPanic, editorSaving) {
+        if (openPanic && !editorSaving) {
+            // A notification explicitly targets the urgency list, never a restored detail stack.
+            navController.navigate(PanicDestination.Panic.route) {
+                popUpTo(navController.graph.findStartDestination().id) { saveState = false }
+                launchSingleTop = true
+                restoreState = false
+            }
             onPanicOpened()
         }
     }
