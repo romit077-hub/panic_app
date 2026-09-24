@@ -1,6 +1,8 @@
 package com.example.panic_app.ui.screens.settings
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -15,7 +17,7 @@ import com.example.panic_app.model.ThemePreference
 fun SettingsScreen(theme: ThemePreference, notifications: Boolean, panicAlerts: Boolean, intensity: Int,
     onTheme: (ThemePreference) -> Unit, onNotifications: (Boolean) -> Unit, onPanicAlerts: (Boolean) -> Unit, onIntensity: (Int) -> Unit,
     status: String, feedback: String?, busy: Boolean, canRequestPermission: Boolean,
-    onPermission: () -> Unit, onSystemSettings: () -> Unit, debug: Boolean, onCheckNow: () -> Unit) {
+    onPermission: () -> Unit, onSystemSettings: () -> Unit, debug: Boolean, onCheckNow: () -> Unit, onPlanner: () -> Unit) {
     ScreenList {
         item { ScreenHeading("Make it yours", "Choose how PANIC feels for you.") }
         item { Panel {
@@ -26,13 +28,19 @@ fun SettingsScreen(theme: ThemePreference, notifications: Boolean, panicAlerts: 
             TextButton(onClick = onSystemSettings) { Text("Open Android notification settings") }
             feedback?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
         } }
+        item { SectionHeader("Planning") }
+        item { Panel {
+            Text("Make time for your deadlines", style = MaterialTheme.typography.titleMedium)
+            Text("Choose weekly availability, session length and breaks.")
+            OutlinedButton(onClick = onPlanner, modifier = Modifier.fillMaxWidth()) { Text("Planner settings") }
+        } }
         item { SectionHeader("Appearance") }
         item { Panel {
             Text("Theme", style = MaterialTheme.typography.titleMedium)
             Text("Saved on this device. System follows your Android appearance setting.")
-            ThemePreference.entries.forEach { option ->
-                OutlinedButton(onClick = { onTheme(option) }, enabled = !busy, modifier = Modifier.fillMaxWidth()) {
-                    Text(if (theme == option) "✓ ${option.label}" else option.label)
+            Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                ThemePreference.entries.forEach { option ->
+                    FilterChip(selected = theme == option, onClick = { onTheme(option) }, enabled = !busy, label = { Text(option.label) })
                 }
             }
         } }
@@ -61,7 +69,7 @@ fun SettingsScreen(theme: ThemePreference, notifications: Boolean, panicAlerts: 
             Text("Runs the real check immediately. Permissions, saved preferences and cooldowns still apply. At most one reminder per check.")
             Button(onClick = onCheckNow, enabled = !busy) { Text(if (busy) "Working…" else "Run deadline check now") }
         } }
-        item { Panel { Text("PANIC — Deadline Enforcer", style = MaterialTheme.typography.titleMedium); Text("College demo • Offline task management\nTasks are stored with Room. Risk-based reminders use the same engine as PANIC Mode.", style = MaterialTheme.typography.bodyMedium) } }
+        item { Panel { Text("PANIC — Deadline Enforcer", style = MaterialTheme.typography.titleMedium); Text("Your deadlines and preferences stay on this device. Plan your work, review your risk, and keep moving.", style = MaterialTheme.typography.bodyMedium) } }
     }
 }
 

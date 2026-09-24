@@ -22,14 +22,9 @@ fun RiskSummary(risk: RiskResult, expanded: Boolean = false) {
         Text(formatRemainingTime(risk.remainingMillis), style = MaterialTheme.typography.bodyMedium,
             color = if (risk.isOverdue) colors.foreground else MaterialTheme.colorScheme.onSurfaceVariant)
         if (expanded) {
-            LinearProgressIndicator(progress = { risk.score / 100f }, modifier = Modifier.fillMaxWidth(),
-                color = colors.foreground, trackColor = colors.background)
+            PanicProgress(risk.score / 100f)
             Text("Why this score", style = MaterialTheme.typography.labelLarge)
             Text(risk.reason, style = MaterialTheme.typography.bodyMedium)
-            if (risk.remainingMillis > 0) Text(
-                "Time ${risk.timePoints} + workload ${risk.workloadPoints} + priority ${risk.priorityPoints}" +
-                    if (risk.capacityFloorApplied) " → minimum 90 because work fills the time available." else " (capped at 100).",
-                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text("Recommended action", style = MaterialTheme.typography.labelLarge)
             Text(risk.recommendedAction, style = MaterialTheme.typography.bodyMedium)
         }

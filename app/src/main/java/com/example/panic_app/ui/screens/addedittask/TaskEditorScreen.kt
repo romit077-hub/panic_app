@@ -39,6 +39,7 @@ fun TaskEditorScreen(state: TaskEditorState, editing: Boolean, onChange: (TaskDr
             state.loading -> item { TaskLoading() }
             state.loadError != null -> item { TaskError(state.loadError, onRetry) }
             else -> {
+                item { SectionHeader("Task details") }
                 item { EditorField("Title *", draft.title, { onChange(draft.copy(title = it)) }, state.errors["title"], !state.saving) }
                 item { EditorField("Subject *", draft.subject, { onChange(draft.copy(subject = it)) }, state.errors["subject"], !state.saving) }
                 item { EditorField("Description", draft.description, { onChange(draft.copy(description = it)) }, state.errors["description"], !state.saving, multiline = true) }
@@ -54,7 +55,8 @@ fun TaskEditorScreen(state: TaskEditorState, editing: Boolean, onChange: (TaskDr
                         state.errors["deadline"]?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                     }
                 }
-                item { EditorField("Estimated minutes *", draft.estimatedMinutes, { onChange(draft.copy(estimatedMinutes = it)) }, state.errors["estimate"], !state.saving, numeric = true) }
+                item { SectionHeader("Workload") }
+                item { EditorField("Remaining work (minutes) *", draft.estimatedMinutes, { onChange(draft.copy(estimatedMinutes = it)) }, state.errors["estimate"], !state.saving, numeric = true) }
                 item {
                     Panel {
                         Text("Priority", style = MaterialTheme.typography.titleMedium)
@@ -69,7 +71,7 @@ fun TaskEditorScreen(state: TaskEditorState, editing: Boolean, onChange: (TaskDr
                 state.saveError?.let { message -> item { Text(message, color = MaterialTheme.colorScheme.error) } }
                 item {
                     Button(onClick = onSave, enabled = !state.saving && !state.saved, modifier = Modifier.fillMaxWidth()) {
-                        Text(if (state.saving) "Saving…" else if (editing) "Save changes" else "Save Task")
+                        Text(if (state.saving) "Saving…" else if (editing) "Save changes" else "Save task")
                     }
                 }
             }
@@ -108,7 +110,7 @@ private fun EditorField(label: String, value: String, onChange: (String) -> Unit
     error: String?, enabled: Boolean, multiline: Boolean = false, numeric: Boolean = false) {
     OutlinedTextField(value = value, onValueChange = onChange, label = { Text(label) },
         modifier = Modifier.fillMaxWidth(), enabled = enabled, singleLine = !multiline,
-        minLines = if (multiline) 3 else 1, maxLines = if (multiline) 6 else 1, isError = error != null,
+        minLines = if (multiline) 2 else 1, maxLines = if (multiline) 6 else 1, isError = error != null,
         supportingText = { if (error != null) Text(error) },
         keyboardOptions = KeyboardOptions(keyboardType = if (numeric) KeyboardType.Number else KeyboardType.Text))
 }

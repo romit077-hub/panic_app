@@ -14,21 +14,17 @@ import com.example.panic_app.ui.components.*
 @Composable
 fun TasksScreen(state: TasksUiState, onAdd: () -> Unit, onEdit: (Long) -> Unit,
     onDelete: (Long) -> Unit, onToggle: (Long) -> Unit, onRetry: () -> Unit, onDismissError: () -> Unit) {
-    var selected by rememberSaveable { mutableStateOf("Pending") }
+    var selected by rememberSaveable { mutableStateOf(TaskFilter.Pending) }
     var deleteId by rememberSaveable { mutableStateOf<Long?>(null) }
     val deleting = state.tasks.firstOrNull { it.id == deleteId }
-    val visible = when (selected) {
-        "Completed" -> state.tasks.filter { it.isCompleted }
-        "All" -> state.rankedPending() + state.tasks.filter { it.isCompleted }
-        else -> state.rankedPending()
-    }
+    val visible = filterTasks(state, selected, state.calculatedAtMillis, java.time.ZoneId.systemDefault())
     ScreenList {
         item { ScreenHeading("Your tasks", "Your deadlines, saved offline on this device.") }
         item { Button(onClick = onAdd, modifier = Modifier.fillMaxWidth()) { Text("+ Add Task") } }
         item {
             Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                listOf("Pending", "Completed", "All").forEach { label ->
-                    FilterChip(selected = selected == label, onClick = { selected = label }, label = { Text(label) })
+                TaskFilter.entries.forEach { filter ->
+                    FilterChip(selected = selected == filter, onClick = { selected = filter }, label = { Text(filter.label) })
                 }
             }
         }
@@ -40,12 +36,12 @@ fun TasksScreen(state: TasksUiState, onAdd: () -> Unit, onEdit: (Long) -> Unit,
             state.loading -> item { TaskLoading() }
             state.loadError != null -> item { TaskError(state.loadError, onRetry) }
             state.tasks.isEmpty() -> item { EmptyTasks(onAdd = onAdd) }
-            visible.isEmpty() -> item { EmptyTasks("No ${selected.lowercase()} tasks", "Choose another filter or add a deadline.", onAdd) }
+            visible.isEmpty() -> item { EmptyTasks("No ${selected.label.lowercase()} tasks", "Choose another filter or add a deadline.", onAdd) }
             else -> {
                 item { Text("${visible.size} tasks • Pending tasks ordered by urgency", color = MaterialTheme.colorScheme.onSurfaceVariant) }
                 items(visible, key = { it.id }) { task ->
                     TaskCard(task, state.risks.getValue(task.id), task.id in state.busyIds, onEdit = { onEdit(task.id) },
-                        onDelete = { deleteId = task.id }, onToggle = { onToggle(task.id) })
+                        onDelete = { deleteId = task.id }, onToggle = { onToggle(task.id) }, modifier = Modifier.animateItem())
                 }
             }
         }

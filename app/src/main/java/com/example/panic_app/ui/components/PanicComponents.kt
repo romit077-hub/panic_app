@@ -1,5 +1,7 @@
 package com.example.panic_app.ui.components
 
+import androidx.compose.animation.AnimatedContent
+import com.example.panic_app.ui.theme.PanicDesign
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -15,8 +17,8 @@ import com.example.panic_app.ui.theme.riskColors
 
 @Composable
 fun ScreenList(content: LazyListScope.() -> Unit) {
-    LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp), content = content)
+    LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(PanicDesign.screenPadding),
+        verticalArrangement = Arrangement.spacedBy(PanicDesign.sectionGap), content = content)
 }
 
 @Composable
@@ -38,10 +40,10 @@ fun SectionHeader(title: String, action: String? = null, onAction: () -> Unit = 
 
 @Composable
 fun Panel(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
-    Card(modifier = modifier.fillMaxWidth(), shape = RoundedCornerShape(22.dp),
+    Card(modifier = modifier.fillMaxWidth(), shape = RoundedCornerShape(PanicDesign.cardRadius),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)) {
-        Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp), content = content)
+        Column(Modifier.padding(PanicDesign.cardPadding), verticalArrangement = Arrangement.spacedBy(PanicDesign.contentGap), content = content)
     }
 }
 
@@ -56,7 +58,9 @@ fun RiskBadge(risk: RiskLevel) {
 @Composable
 fun StatCard(label: String, value: String, modifier: Modifier = Modifier) {
     Panel(modifier) {
-        Text(value, style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.primary)
+        AnimatedContent(targetState = value, label = "Metric") { displayed ->
+            Text(displayed, style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.primary)
+        }
         Text(label, style = MaterialTheme.typography.labelMedium)
     }
 }

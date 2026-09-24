@@ -1,5 +1,7 @@
 package com.example.panic_app.ui.screens.calendar
 
+import androidx.compose.animation.AnimatedContent
+import com.example.panic_app.ui.screens.planner.studyDuration
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.items
@@ -37,6 +39,10 @@ fun CalendarScreen(state: TasksUiState, onEdit: (Long) -> Unit, onRetry: () -> U
                         Column(Modifier.padding(vertical = 8.dp), horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally) {
                             Text(day.format(DateTimeFormatter.ofPattern("EEE")))
                             Text(day.dayOfMonth.toString(), style = MaterialTheme.typography.titleLarge)
+                            val dayTasks = pending.filter { localDate(it.dueDateMillis) == day }
+                            Text("${dayTasks.size} due", style = MaterialTheme.typography.labelSmall)
+                            val risk = dayTasks.mapNotNull { state.risks[it.id] }.maxByOrNull { it.score }
+                            if (risk != null) RiskBadge(risk.level)
                         }
                     })
                 }
@@ -46,16 +52,24 @@ fun CalendarScreen(state: TasksUiState, onEdit: (Long) -> Unit, onRetry: () -> U
             state.loading -> item { TaskLoading() }
             state.loadError != null -> item { TaskError(state.loadError, onRetry) }
             else -> {
-                item { SectionHeader(selected.format(DateTimeFormatter.ofPattern("EEEE, d MMM"))) }
+                item {
+                    AnimatedContent(targetState = selected, label = "Selected date") { date ->
+                        Column {
+                            SectionHeader(date.format(DateTimeFormatter.ofPattern("EEEE, d MMM")))
+                            val due = pending.filter { localDate(it.dueDateMillis) == date }
+                            Text("${due.size} tasks • ${studyDuration(due.sumOf { it.estimatedMinutes.coerceAtLeast(0).toLong() })} estimated work")
+                        }
+                    }
+                }
                 if (tasks.isEmpty()) item { Panel { Text("No pending deadlines on this date.") } }
                 items(tasks, key = { it.id }) { task ->
-                    DeadlineCard(task, state.risks.getValue(task.id), onEdit = { onEdit(task.id) })
+                    DeadlineCard(task, state.risks.getValue(task.id), onEdit = { onEdit(task.id) }, modifier = Modifier.animateItem())
                 }
                 item { SectionHeader("Upcoming deadlines") }
                 val upcoming = upcomingCalendarTasks(state.tasks, state.calculatedAtMillis)
                 if (upcoming.isEmpty()) item { Panel { Text("No upcoming deadlines.") } }
                 items(upcoming, key = { "upcoming-${it.id}" }) { task ->
-                    DeadlineCard(task, state.risks.getValue(task.id), onEdit = { onEdit(task.id) })
+                    DeadlineCard(task, state.risks.getValue(task.id), onEdit = { onEdit(task.id) }, modifier = Modifier.animateItem())
                 }
             }
         }

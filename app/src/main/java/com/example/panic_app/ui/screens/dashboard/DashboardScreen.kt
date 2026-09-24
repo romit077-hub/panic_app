@@ -7,73 +7,85 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.panic_app.ui.components.*
 import com.example.panic_app.ui.screens.tasks.TasksUiState
-import java.time.LocalDate
-import java.time.LocalTime
+import com.example.panic_app.ui.screens.planner.*
+import com.example.panic_app.util.formatDeadline
+import java.time.Instant
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 @Composable
-fun DashboardScreen(state: TasksUiState, onTasks: () -> Unit, onPanic: () -> Unit,
-    onAnalytics: () -> Unit, onSettings: () -> Unit, onAdd: () -> Unit, onEdit: (Long) -> Unit, onRetry: () -> Unit, onPlan: () -> Unit) {
+fun DashboardScreen(state: TasksUiState, planner: PlannerUiState, onTasks: () -> Unit, onPanic: () -> Unit,
+    onAnalytics: () -> Unit, onSettings: () -> Unit, onAdd: () -> Unit, onEdit: (Long) -> Unit,
+    onRetry: () -> Unit, onPlan: () -> Unit) {
+    val zone = ZoneId.systemDefault()
+    val now = state.calculatedAtMillis
+    val local = Instant.ofEpochMilli(now).atZone(zone)
     val pending = state.rankedPending()
-    val nearest = state.analytics.nearest?.let { deadline -> pending.firstOrNull { it.id == deadline.id } }
-    val attention = pending.firstOrNull { state.risks.getValue(it.id).needsAttention }
+    val next = pending.firstOrNull()
+    val highest = pending.mapNotNull { state.risks[it.id] }.maxByOrNull { it.score }
+    val todayTasks = pending.filter { plannerDate(it.dueDateMillis, zone) == local.toLocalDate() }
     ScreenList {
         item {
-            val greeting = when (LocalTime.now().hour) { in 5..11 -> "Good morning"; in 12..16 -> "Good afternoon"; else -> "Good evening" }
-            ScreenHeading(greeting, "Let's keep those deadlines under control.")
+            val greeting = when (local.hour) { in 5..11 -> "Good morning"; in 12..16 -> "Good afternoon"; else -> "Good evening" }
+            ScreenHeading(greeting, "A clear view of what needs your attention.")
+            if (!state.loading) Text(local.format(DateTimeFormatter.ofPattern("EEEE, d MMMM")), style = MaterialTheme.typography.labelLarge)
         }
-        item { Text(LocalDate.now().format(DateTimeFormatter.ofPattern("EEEE, d MMMM")), color = MaterialTheme.colorScheme.onSurfaceVariant) }
-        item { Button(onClick = onAdd, modifier = Modifier.fillMaxWidth()) { Text("+ Add Task") } }
-        item { Panel {
-            Text("Smart Planner", style = MaterialTheme.typography.titleMedium)
-            Text("Build today's study plan around your deadlines.")
-            OutlinedButton(onClick = onPlan, modifier = Modifier.fillMaxWidth()) { Text("Open Smart Planner") }
-        } }
         when {
             state.loading -> item { TaskLoading() }
             state.loadError != null -> item { TaskError(state.loadError, onRetry) }
             else -> {
-                item {
-                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        StatCard("Pending", state.pendingCount.toString(), Modifier.weight(1f))
-                        StatCard("Completed", state.completedCount.toString(), Modifier.weight(1f))
-                    }
-                }
-                item {
-                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        StatCard("High risk", state.highCount.toString(), Modifier.weight(1f))
-                        StatCard("Critical", state.criticalCount.toString(), Modifier.weight(1f))
-                    }
-                }
-                item { SectionHeader("Needs attention", "Panic Mode", onPanic) }
-                if (attention != null) item {
-                    Panel {
-                        Text(attention.title, style = MaterialTheme.typography.titleLarge)
-                        Text(attention.subject, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        RiskSummary(state.risks.getValue(attention.id), expanded = true)
-                        TextButton(onClick = { onEdit(attention.id) }) { Text("View / edit task") }
-                    }
-                } else item { Panel { Text("Everything is under control.", style = MaterialTheme.typography.titleMedium); Text("No deadlines currently need urgent attention.") } }
-                item { SectionHeader("Nearest pending deadline", "All tasks", onTasks) }
-                if (nearest != null) item { DeadlineCard(nearest, state.risks.getValue(nearest.id), onEdit = { onEdit(nearest.id) }) }
-                else item { EmptyTasks(
-                    title = if (state.tasks.isEmpty()) "No deadlines yet" else "You're all caught up",
-                    subtitle = if (state.tasks.isEmpty()) "Add your first task and PANIC will help you stay ahead." else "All your saved tasks are complete.", onAdd = onAdd) }
-                item {
-                    Panel {
-                        Text("PANIC MODE", style = MaterialTheme.typography.titleLarge)
-                        Text("${state.attentionCount} tasks need planning or action.")
-                        Text("${state.immediateCount} need immediate attention • ${state.overdueCount} overdue", style = MaterialTheme.typography.bodyMedium)
-                        Button(onClick = onPanic, modifier = Modifier.fillMaxWidth()) { Text("Enter Panic Mode") }
-                    }
-                }
+                item { Panel {
+                    Text("DUE TODAY", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                    Text("${todayTasks.size} tasks • ${studyDuration(todayTasks.sumOf { it.estimatedMinutes.coerceAtLeast(0).toLong() })} estimated work",
+                        style = MaterialTheme.typography.titleLarge)
+                    Text("${state.criticalCount} critical overall • ${state.overdueCount} overdue", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    if (highest != null) RiskGauge(highest)
+                    else Text("Nothing is chasing you right now.")
+                } }
+                item { SectionHeader("Next action", "All tasks", onTasks) }
+                if (next != null) item { Panel {
+                    Text(next.title, style = MaterialTheme.typography.titleLarge)
+                    RiskSummary(state.risks.getValue(next.id))
+                    Text("${studyDuration(next.estimatedMinutes.coerceAtLeast(0).toLong())} remaining • ${next.priority.label} priority")
+                    Button(onClick = { onEdit(next.id) }, modifier = Modifier.fillMaxWidth()) { Text("Open task") }
+                } } else item { EmptyTasks("You're all caught up", "Add a deadline when you're ready for what's next.", onAdd) }
+                item { SmartPlanPanel(planner, now, zone, onPlan) }
+                item { Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    StatCard("Pending", state.pendingCount.toString(), Modifier.weight(1f))
+                    StatCard("Completed", state.completedCount.toString(), Modifier.weight(1f))
+                } }
+                item { Panel {
+                    SectionHeader("Deadline attention", "Panic Mode", onPanic)
+                    Text("${state.immediateCount} tasks need immediate attention.")
+                    state.analytics.nearest?.let { Text("Nearest deadline: ${it.title}\n${formatDeadline(it.dueDateMillis)}") }
+                } }
             }
         }
-        item {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedButton(onClick = onAnalytics, modifier = Modifier.weight(1f)) { Text("Analytics") }
-                OutlinedButton(onClick = onSettings, modifier = Modifier.weight(1f)) { Text("Settings") }
+        item { Button(onClick = onAdd, modifier = Modifier.fillMaxWidth()) { Text("+ Add task") } }
+        item { Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            OutlinedButton(onClick = onAnalytics, modifier = Modifier.weight(1f)) { Text("Analytics") }
+            OutlinedButton(onClick = onSettings, modifier = Modifier.weight(1f)) { Text("Settings") }
+        } }
+    }
+}
+
+@Composable
+private fun SmartPlanPanel(state: PlannerUiState, now: Long, zone: ZoneId, onPlan: () -> Unit) {
+    val plan = state.plan
+    Panel {
+        Text("SMART PLAN", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+        if (state.generating) Text("Building your plan…")
+        else if (plan == null) Text("Build a realistic study plan around your deadlines.")
+        else {
+            val today = plannerDate(now, zone)
+            Text("${studyDuration(plan.sessions.filter { plannerDate(it.startTime, zone) == today }.sumOf { it.durationMinutes.toLong() })} scheduled today",
+                style = MaterialTheme.typography.titleLarge)
+            plan.sessions.firstOrNull { it.endTime > now }?.let {
+                Text("${if (it.startTime <= now) "Current session" else "Next session"}: ${it.taskTitle}")
+                Text(formatDeadline(it.startTime, zone, today), style = MaterialTheme.typography.bodySmall)
             }
+            if (plannerDate(plan.generatedAt, zone) != today || state.zone != zone) Text("Open your plan to refresh today's schedule.")
         }
+        FilledTonalButton(onClick = onPlan, modifier = Modifier.fillMaxWidth()) { Text(if (plan == null) "Build my plan" else "View plan") }
     }
 }

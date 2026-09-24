@@ -12,6 +12,7 @@ enum class PanicDestination(val route: String, val title: String, val icon: Imag
     Calendar("calendar", "Calendar", Icons.Default.DateRange),
     Panic("panic", "Panic", Icons.Default.Warning),
     Analytics("analytics", "Analytics", Icons.Default.Info),
+    PlannerSettings("planner/settings", "Study preferences", Icons.Default.Settings),
     Settings("settings", "Settings", Icons.Default.Settings),
     AddTask("task/add", "Add Task", Icons.Default.Add),
     EditTask("task/edit/{taskId}", "Edit Task", Icons.Default.Edit);

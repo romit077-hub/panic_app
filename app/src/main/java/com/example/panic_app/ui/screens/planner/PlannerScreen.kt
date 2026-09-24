@@ -1,5 +1,6 @@
 package com.example.panic_app.ui.screens.planner
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.LazyListScope
@@ -56,7 +57,9 @@ private fun PlannerScreen(state: PlannerUiState, now: Long, onGenerate: () -> Un
             pending == 0 -> item { Panel { Text("You're clear", style = MaterialTheme.typography.titleLarge); Text("No unfinished tasks need scheduling.") } }
             else -> {
                 item { Button(onClick = onGenerate, enabled = !state.generating && !state.saving, modifier = Modifier.fillMaxWidth()) {
-                    Text(if (state.generating) "Building plan…" else if (plan == null) "Generate Plan" else "Regenerate Plan")
+                    AnimatedContent(targetState = state.generating, label = "Plan generation") { busy ->
+                        Text(if (busy) "Building your plan…" else if (plan == null) "Generate plan" else "Regenerate plan")
+                    }
                 } }
                 if (state.generating) item { LinearProgressIndicator(Modifier.fillMaxWidth()) }
                 if (state.config.availability.isEmpty()) item { Panel {
@@ -70,10 +73,11 @@ private fun PlannerScreen(state: PlannerUiState, now: Long, onGenerate: () -> Un
             }
         }
         if (plan != null && pending > 0) {
-            item { Panel {
-                Text("Plan summary", style = MaterialTheme.typography.titleMedium)
-                Text(studyDuration(plan.totalScheduledMinutes) + " scheduled", style = MaterialTheme.typography.headlineSmall)
-                Text("${plan.tasksCovered} tasks covered • ${studyDuration(plan.totalUnscheduledMinutes)} unscheduled")
+            item(key = "plan-summary") { Panel(Modifier.animateItem()) {
+                Text("YOUR STUDY PLAN", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                Text(studyDuration(plan.totalScheduledMinutes) + " scheduled across this plan", style = MaterialTheme.typography.titleLarge)
+                Text("Today: ${studyDuration(grouped[today].orEmpty().sumOf { it.durationMinutes.toLong() })}")
+                Text("${plan.tasksCovered} tasks covered • ${studyDuration(plan.totalUnscheduledMinutes)} at risk")
                 Text("Generated ${formatDeadline(plan.generatedAt, zone, today)}", style = MaterialTheme.typography.bodySmall)
                 Text("Sessions are suggestions, not recorded progress. Update task estimates as you work.", style = MaterialTheme.typography.bodySmall)
                 if (state.zone != zone || plannerDate(plan.generatedAt, zone) != today)
@@ -99,9 +103,9 @@ private fun PlannerScreen(state: PlannerUiState, now: Long, onGenerate: () -> Un
             else {
                 item { SectionHeader("Workload at risk") }
                 items(plan.unscheduledWork, key = { "unscheduled-${it.taskId}" }) { work ->
-                    Panel {
+                    Panel(Modifier.animateItem()) {
                         Text(work.taskTitle, style = MaterialTheme.typography.titleMedium)
-                        Text("${studyDuration(work.unscheduledMinutes)} could not be scheduled", color = MaterialTheme.colorScheme.error)
+                        Text("${studyDuration(work.unscheduledMinutes)} could not be scheduled", color = MaterialTheme.colorScheme.onSurfaceVariant)
                         state.tasks.firstOrNull { it.id == work.taskId }?.let { Text("Deadline: ${formatDeadline(it.dueDateMillis, zone, today)}") }
                         Text(work.reason.explanation())
                         TextButton(onClick = { onEdit(work.taskId) }) { Text("Review task") }
@@ -119,16 +123,16 @@ private fun PlannerScreen(state: PlannerUiState, now: Long, onGenerate: () -> Un
 private fun LazyListScope.sessionTimeline(sessions: List<StudySession>, config: PlannerConfig, zone: ZoneId, onEdit: (Long) -> Unit) {
     sessions.forEachIndexed { index, session ->
         item(key = "session-${session.taskId}-${session.startTime}") {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(Modifier.fillMaxWidth().animateItem(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Column(Modifier.width(76.dp)) {
                     Text(plannerTime(session.startTime, zone), style = MaterialTheme.typography.labelLarge)
                     Text(plannerTime(session.endTime, zone), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     VerticalDivider(Modifier.padding(start = 8.dp, top = 8.dp).height(44.dp))
                 }
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Panel(Modifier.weight(1f)) {
                     Text(session.taskTitle, style = MaterialTheme.typography.titleMedium)
                     RiskBadge(session.riskLevel)
-                    Text("${session.durationMinutes} min • Risk ${session.riskScore}/100", style = MaterialTheme.typography.bodySmall)
+                    Text("${studyDuration(session.durationMinutes.toLong())} • Risk ${session.riskScore}/100", style = MaterialTheme.typography.bodySmall)
                     TextButton(onClick = { onEdit(session.taskId) }) { Text("Open task") }
                 }
             }

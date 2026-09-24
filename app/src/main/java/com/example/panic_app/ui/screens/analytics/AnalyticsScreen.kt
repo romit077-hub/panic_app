@@ -69,7 +69,7 @@ fun AnalyticsScreen(state: TasksUiState, onRetry: () -> Unit, onPanic: () -> Uni
                 item { SectionHeader("Productivity insights") }
                 item { Panel {
                     summary.insights.forEach { Text(it.message, style = MaterialTheme.typography.bodyMedium) }
-                    Text("Rule-based observations from this task snapshot. No completion history or streak is inferred.", style = MaterialTheme.typography.bodySmall,
+                    Text("Insights reflect your currently saved tasks.", style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                 } }
             }
@@ -84,7 +84,7 @@ private fun CompletionOverview(summary: AnalyticsSummary) {
         Text(summary.completionPercent?.let { "$it%" } ?: "—", style = MaterialTheme.typography.headlineLarge,
             color = MaterialTheme.colorScheme.primary)
         if (summary.total > 0) {
-            LinearProgressIndicator(progress = { summary.completionFraction }, modifier = Modifier.fillMaxWidth())
+            PanicProgress(summary.completionFraction)
             Text("${summary.completed} of ${summary.total} recorded tasks completed")
         } else Text("No tasks yet. Add a task to begin tracking your progress.")
     }
@@ -102,12 +102,12 @@ private fun StatsRow(first: String, firstValue: Int, second: String, secondValue
 private fun WorkloadRow(label: String, workload: WorkloadPeriod) {
     Column {
         Text(label, style = MaterialTheme.typography.titleSmall)
-        Text("${workload.count} task(s) • ${formatWorkload(workload.minutes)}")
+        Text("${workload.count} tasks • ${formatWorkload(workload.minutes)}")
     }
 }
 
 @Composable
 private fun DistributionBar(count: Int, total: Int) {
     Text("$count of $total tasks", style = MaterialTheme.typography.bodySmall)
-    LinearProgressIndicator(progress = { if (total == 0) 0f else count.toFloat() / total }, modifier = Modifier.fillMaxWidth())
+    PanicProgress(if (total == 0) 0f else count.toFloat() / total)
 }

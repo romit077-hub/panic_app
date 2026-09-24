@@ -45,6 +45,10 @@ fun PanicApp(repository: TaskRepository, reminders: DeadlineReminderController,
         viewModelFactory { initializer { TasksViewModel(repository) } }
     })
     val tasksState by tasksViewModel.state.collectAsStateWithLifecycle()
+    val planner: com.example.panic_app.ui.screens.planner.PlannerViewModel = viewModel(factory = remember(repository, plannerSettings) {
+        viewModelFactory { initializer { com.example.panic_app.ui.screens.planner.PlannerViewModel(repository, plannerSettings) } }
+    })
+    val plannerState by planner.state.collectAsStateWithLifecycle()
     val lifecycleOwner = LocalLifecycleOwner.current
     LaunchedEffect(lifecycleOwner, tasksViewModel) {
         lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -119,17 +123,16 @@ fun PanicApp(repository: TaskRepository, reminders: DeadlineReminderController,
             }
         ) { padding ->
             NavHost(navController = navController, startDestination = PanicDestination.Dashboard.route,
-                modifier = Modifier.fillMaxSize().padding(padding).consumeWindowInsets(padding).imePadding()) {
+                modifier = Modifier.fillMaxSize().padding(padding).consumeWindowInsets(padding).imePadding(),
+                enterTransition = { androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(180)) },
+                exitTransition = { androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(150)) }) {
                 composable(PanicDestination.Dashboard.route) {
-                    DashboardScreen(state = tasksState, onRetry = tasksViewModel::retry,
+                    DashboardScreen(state = tasksState, planner = plannerState, onRetry = tasksViewModel::retry,
                         onEdit = { openEdit(navController, it) }, onTasks = { openTab(PanicDestination.Tasks) }, onPanic = { openTab(PanicDestination.Panic) },
                         onAnalytics = { openDetail(PanicDestination.Analytics) }, onSettings = { openDetail(PanicDestination.Settings) },
                         onAdd = { openDetail(PanicDestination.AddTask) }, onPlan = { openTab(PanicDestination.Plan) })
                 }
                 composable(PanicDestination.Plan.route) {
-                    val planner: com.example.panic_app.ui.screens.planner.PlannerViewModel = viewModel(factory = remember(repository, plannerSettings) {
-                        viewModelFactory { initializer { com.example.panic_app.ui.screens.planner.PlannerViewModel(repository, plannerSettings) } }
-                    })
                     com.example.panic_app.ui.screens.planner.PlannerRoute(planner, onEdit = { openEdit(navController, it) })
                 }
                 composable(PanicDestination.Tasks.route) {
@@ -149,8 +152,11 @@ fun PanicApp(repository: TaskRepository, reminders: DeadlineReminderController,
                 composable(PanicDestination.Calendar.route) { CalendarScreen(tasksState, onEdit = { openEdit(navController, it) }, onRetry = tasksViewModel::retry) }
                 composable(PanicDestination.Panic.route) { PanicScreen(tasksState, onEdit = { openEdit(navController, it) }, onTasks = { openTab(PanicDestination.Tasks) }, onRetry = tasksViewModel::retry) }
                 composable(PanicDestination.Analytics.route) { AnalyticsScreen(tasksState, onRetry = tasksViewModel::retry, onPanic = { openTab(PanicDestination.Panic) }) }
+                composable(PanicDestination.PlannerSettings.route) {
+                    com.example.panic_app.ui.screens.planner.PlannerSettingsScreen(plannerState, planner::save) { navController.popBackStack() }
+                }
                 composable(PanicDestination.Settings.route) {
-                    ReminderSettingsRoute(reminders)
+                    ReminderSettingsRoute(reminders, onPlanner = { openDetail(PanicDestination.PlannerSettings) })
                 }
             }
         }

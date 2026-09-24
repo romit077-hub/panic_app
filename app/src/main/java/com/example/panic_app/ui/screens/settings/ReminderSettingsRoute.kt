@@ -20,7 +20,7 @@ import kotlinx.coroutines.launch
 import java.io.IOException
 
 @Composable
-fun ReminderSettingsRoute(controller: DeadlineReminderController) {
+fun ReminderSettingsRoute(controller: DeadlineReminderController, onPlanner: () -> Unit) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val preferences by controller.settings.collectAsStateWithLifecycle()
@@ -60,5 +60,5 @@ fun ReminderSettingsRoute(controller: DeadlineReminderController) {
         onSystemSettings = { context.startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
             .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)) },
         debug = context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0,
-        onCheckNow = { perform { controller.check() } })
+        onCheckNow = { perform { controller.check() } }, onPlanner = onPlanner)
 }

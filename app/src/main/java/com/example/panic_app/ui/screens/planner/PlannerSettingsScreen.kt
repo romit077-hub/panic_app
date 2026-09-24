@@ -20,6 +20,8 @@ fun PlannerSettingsScreen(state: PlannerUiState, onSave: (PlannerConfig) -> Unit
     val config = state.config
     var validation by rememberSaveable { mutableStateOf<String?>(null) }
     val context = LocalContext.current
+    val dialogTheme = if (com.example.panic_app.ui.theme.LocalPanicDarkTheme.current)
+        android.R.style.Theme_Material_Dialog_Alert else android.R.style.Theme_Material_Light_Dialog_Alert
     fun changeWindow(index: Int, start: Int, end: Int) {
         if (start >= end) { validation = "End time must be after start time. Split overnight study across two days."; return }
         validation = null
@@ -53,11 +55,11 @@ fun PlannerSettingsScreen(state: PlannerUiState, onSave: (PlannerConfig) -> Unit
                     windows.forEach { (index, window) ->
                         Column {
                             OutlinedButton(enabled = !state.saving, onClick = {
-                                TimePickerDialog(context, { _, h, m -> changeWindow(index, h * 60 + m, window.endMinute) },
+                                TimePickerDialog(context, dialogTheme, { _, h, m -> changeWindow(index, h * 60 + m, window.endMinute) },
                                     window.startMinute / 60, window.startMinute % 60, android.text.format.DateFormat.is24HourFormat(context)).show()
                             }, modifier = Modifier.fillMaxWidth()) { Text("Start · ${windowTime(window.startMinute)}") }
                             OutlinedButton(enabled = !state.saving, onClick = {
-                                TimePickerDialog(context, { _, h, m -> changeWindow(index, window.startMinute, if (h == 0 && m == 0) 1440 else h * 60 + m) },
+                                TimePickerDialog(context, dialogTheme, { _, h, m -> changeWindow(index, window.startMinute, if (h == 0 && m == 0) 1440 else h * 60 + m) },
                                     (window.endMinute / 60) % 24, window.endMinute % 60, android.text.format.DateFormat.is24HourFormat(context)).show()
                             }, modifier = Modifier.fillMaxWidth()) { Text("End · ${windowTime(window.endMinute)}") }
                             TextButton(enabled = !state.saving, onClick = { onSave(config.copy(availability = config.availability.filterIndexed { i, _ -> i != index })) }) { Text("Remove window") }
