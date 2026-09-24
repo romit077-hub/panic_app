@@ -26,7 +26,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             val app = application as PanicApplication
-            PanicApp(repository = app.taskRepository, reminders = app.reminders,
+            PanicApp(repository = app.taskRepository, reminders = app.reminders, plannerSettings = app.plannerSettings,
                 openPanic = openPanic, onPanicOpened = { openPanic = false; intent.action = null },
                 onThemeChanged = { dark ->
                 enableEdgeToEdge(

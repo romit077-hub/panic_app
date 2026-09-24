@@ -13,7 +13,7 @@ import java.time.format.DateTimeFormatter
 
 @Composable
 fun DashboardScreen(state: TasksUiState, onTasks: () -> Unit, onPanic: () -> Unit,
-    onAnalytics: () -> Unit, onSettings: () -> Unit, onAdd: () -> Unit, onEdit: (Long) -> Unit, onRetry: () -> Unit) {
+    onAnalytics: () -> Unit, onSettings: () -> Unit, onAdd: () -> Unit, onEdit: (Long) -> Unit, onRetry: () -> Unit, onPlan: () -> Unit) {
     val pending = state.rankedPending()
     val nearest = state.analytics.nearest?.let { deadline -> pending.firstOrNull { it.id == deadline.id } }
     val attention = pending.firstOrNull { state.risks.getValue(it.id).needsAttention }
@@ -24,6 +24,11 @@ fun DashboardScreen(state: TasksUiState, onTasks: () -> Unit, onPanic: () -> Uni
         }
         item { Text(LocalDate.now().format(DateTimeFormatter.ofPattern("EEEE, d MMMM")), color = MaterialTheme.colorScheme.onSurfaceVariant) }
         item { Button(onClick = onAdd, modifier = Modifier.fillMaxWidth()) { Text("+ Add Task") } }
+        item { Panel {
+            Text("Smart Planner", style = MaterialTheme.typography.titleMedium)
+            Text("Build today's study plan around your deadlines.")
+            OutlinedButton(onClick = onPlan, modifier = Modifier.fillMaxWidth()) { Text("Open Smart Planner") }
+        } }
         when {
             state.loading -> item { TaskLoading() }
             state.loadError != null -> item { TaskError(state.loadError, onRetry) }

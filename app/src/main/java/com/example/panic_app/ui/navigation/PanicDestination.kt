@@ -8,6 +8,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 enum class PanicDestination(val route: String, val title: String, val icon: ImageVector) {
     Dashboard("dashboard", "Dashboard", Icons.Default.Home),
     Tasks("tasks", "Tasks", Icons.AutoMirrored.Filled.List),
+    Plan("smart_planner", "Plan", Icons.Default.CheckCircle),
     Calendar("calendar", "Calendar", Icons.Default.DateRange),
     Panic("panic", "Panic", Icons.Default.Warning),
     Analytics("analytics", "Analytics", Icons.Default.Info),
@@ -21,7 +22,7 @@ enum class PanicDestination(val route: String, val title: String, val icon: Imag
     }
 
     companion object {
-        val tabs = listOf(Dashboard, Tasks, Calendar, Panic)
+        val tabs = listOf(Dashboard, Tasks, Plan, Calendar, Panic)
         fun fromRoute(route: String?) = entries.firstOrNull { it.route == route } ?: Dashboard
     }
 }

@@ -39,6 +39,7 @@ import com.example.panic_app.ui.theme.Panic_appTheme
 
 @Composable
 fun PanicApp(repository: TaskRepository, reminders: DeadlineReminderController,
+    plannerSettings: com.example.panic_app.data.settings.PlannerSettingsStore,
     openPanic: Boolean = false, onPanicOpened: () -> Unit = {}, onThemeChanged: (Boolean) -> Unit = {}) {
     val tasksViewModel: TasksViewModel = viewModel(factory = remember(repository) {
         viewModelFactory { initializer { TasksViewModel(repository) } }
@@ -123,7 +124,13 @@ fun PanicApp(repository: TaskRepository, reminders: DeadlineReminderController,
                     DashboardScreen(state = tasksState, onRetry = tasksViewModel::retry,
                         onEdit = { openEdit(navController, it) }, onTasks = { openTab(PanicDestination.Tasks) }, onPanic = { openTab(PanicDestination.Panic) },
                         onAnalytics = { openDetail(PanicDestination.Analytics) }, onSettings = { openDetail(PanicDestination.Settings) },
-                        onAdd = { openDetail(PanicDestination.AddTask) })
+                        onAdd = { openDetail(PanicDestination.AddTask) }, onPlan = { openTab(PanicDestination.Plan) })
+                }
+                composable(PanicDestination.Plan.route) {
+                    val planner: com.example.panic_app.ui.screens.planner.PlannerViewModel = viewModel(factory = remember(repository, plannerSettings) {
+                        viewModelFactory { initializer { com.example.panic_app.ui.screens.planner.PlannerViewModel(repository, plannerSettings) } }
+                    })
+                    com.example.panic_app.ui.screens.planner.PlannerRoute(planner, onEdit = { openEdit(navController, it) })
                 }
                 composable(PanicDestination.Tasks.route) {
                     TasksScreen(tasksState, onAdd = { openDetail(PanicDestination.AddTask) },
