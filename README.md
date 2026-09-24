@@ -1,4 +1,4 @@
-::: {align="center"}
+
 # 🚨 PANIC
 
 ## Deadline Enforcer
