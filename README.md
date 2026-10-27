@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/readme-hero.svg" width="100%" alt="PANIC / DEADLINE ENFORCER — An offline-first Android study planning system" />
+</p>
+
 
 # 🚨 PANIC
 
