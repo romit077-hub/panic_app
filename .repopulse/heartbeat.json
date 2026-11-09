@@ -1,0 +1,16 @@
+{
+  "schema": "repopulse.heartbeat.v1",
+  "repository": "romit077-hub/panic_app",
+  "checked_at": "2026-11-09",
+  "branch_under_test": "repopulse-heartbeat-test",
+  "base_branch": "main",
+  "base_commit": "794c39ac0cff032bad026bc22d07c3ba28794cfd",
+  "inspection": {
+    "repository_access": "passed",
+    "default_branch": "passed",
+    "root_contents": "passed",
+    "latest_commit": "found"
+  },
+  "verification_scope": "GitHub metadata and repository root inspection only; no build, test, deployment, dependency, or security scan executed.",
+  "result": "inspection_passed"
+}
